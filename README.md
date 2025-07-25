@@ -1,3 +1,3 @@
 # .github
 
-Specialized GitHub reusable workflow templates for ethPandaOps organizations.
+Specialized GitHub reusable workflow templates and actions for ethPandaOps. Yeehaw.
