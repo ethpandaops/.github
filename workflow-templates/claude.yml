@@ -13,10 +13,22 @@ on:
 jobs:
   claude-code-action:
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
+      (
+        (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+        (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
+      ) && (
+        github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER' ||
+        github.event.comment.author_association == 'COLLABORATOR' ||
+        github.event.issue.author_association == 'OWNER' ||
+        github.event.issue.author_association == 'MEMBER' ||
+        github.event.issue.author_association == 'COLLABORATOR' ||
+        github.event.review.author_association == 'OWNER' ||
+        github.event.review.author_association == 'MEMBER' ||
+        github.event.review.author_association == 'COLLABORATOR'
+      )
     runs-on:
       - self-hosted-ghr
       - size-m-x64
@@ -30,116 +42,14 @@ jobs:
       statuses: read
       id-token: write
     steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y unzip curl
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Run Claude PR Assistant
+        uses: ethpandaops/.github/actions/claude-pr-assistant@main
         with:
-          node-version: '23'
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Run Claude PR Action
-        uses: anthropics/claude-code-action@beta
-        with:
-          # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          timeout_minutes: "60"
-          allowed_tools: |
-            Edit
-            Read
-            Write
-            MultiEdit
-            GlobTool
-            GrepTool
-            LS
-            TodoWrite
-            Task
-            
-            # Git operations
-            Bash(git:*)
-            Bash(git status)
-            Bash(git diff:*)
-            Bash(git log:*)
-            Bash(git add:*)
-            Bash(git commit:*)
-            Bash(git push:*)
-            Bash(git pull:*)
-            Bash(git fetch:*)
-            Bash(git checkout:*)
-            Bash(git branch:*)
-            Bash(git merge:*)
-            Bash(git rebase:*)
-            Bash(git cherry-pick:*)
-            Bash(git stash:*)
-            Bash(git reset:*)
-            
-            # GitHub CLI for PR/Issue management
-            Bash(gh:*)
-            Bash(gh pr:*)
-            Bash(gh issue:*)
-            Bash(gh api:*)
-            
-            # Go development
-            Bash(go:*)
-            Bash(go mod:*)
-            Bash(go test:*)
-            Bash(go build:*)
-            Bash(go fmt:*)
-            Bash(go vet:*)
-            Bash(gofmt:*)
-            
-            # Build tools
-            Bash(make:*)
-            Bash(bazel:*)
-            
-            # Testing and linting
-            Bash(npm test)
-            Bash(npm run test:*)
-            Bash(npm run lint:*)
-            Bash(npm run format:*)
-            Bash(go test:*)
-            
-            # Package managers
-            Bash(npm:*)
-            Bash(npm install)
-            Bash(npm ci)
-            Bash(yarn:*)
-            Bash(pip:*)
-            
-            # File operations
-            Bash(cat:*)
-            Bash(ls:*)
-            Bash(find:*)
-            Bash(grep:*)
-            Bash(chmod:*)
-            Bash(mkdir:*)
-            Bash(touch:*)
-            Bash(echo:*)
-            
-            # System info
-            Bash(pwd)
-            Bash(which:*)
-            
-            # CI/CD helpers
-            Bash(exit:*)
-            Bash(test:*)
-            
-            # MCP tools
-            mcp__github__create_pull_request
-          custom_instructions: "Use the create_pull_request tool to create a pull request if needed."
-          # Optional: Restrict network access to specific domains only
-          # experimental_allowed_domains: |
-          #   .anthropic.com
-          #   .github.com
-          #   api.github.com
-          #   .githubusercontent.com
-          #   bun.sh
-          #   registry.npmjs.org
-          #   .blob.core.windows.net
+          # Optional overrides:
+          # timeout_minutes: "90"
+          # node_version: "22"
+          # custom_instructions: |
+          #   Additional custom instructions for this repository
+          # allowed_tools: |
+          #   Custom tool allowlist for this repository
